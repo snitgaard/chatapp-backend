@@ -44,4 +44,12 @@ export class ChatService {
   delete(id: string) {
     this.userMap = this.userMap.filter((c) => c.id !== id);
   }
+
+  updateTyping(typing: boolean, id: string): ChatClient {
+    const chatClient = this.getClients().find((c) => c.id === id);
+    if(chatClient && chatClient.typing !== typing) {
+      chatClient.typing = typing;
+      return chatClient
+    }
+  }
 }
