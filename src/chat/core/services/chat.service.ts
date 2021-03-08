@@ -2,11 +2,19 @@ import { Injectable } from '@nestjs/common';
 import { ChatClient } from '../models/chat-client.model';
 import { ChatMessage } from '../models/chat-message.model';
 import { IChatService } from '../primary-ports/chat.service.interface';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Client } from '../../../client.entity';
+import { Repository } from 'typeorm';
+
 
 @Injectable()
 export class ChatService implements IChatService {
   allMessages: ChatMessage[] = [];
   userMap: ChatClient[] = [];
+  constructor(
+    @InjectRepository(Client)
+    private clientRepository: Repository<Client>
+  ) {}
 
   newMessage(message: string, chatClientId: string): ChatMessage {
     const chatMessage: ChatMessage = {
@@ -29,8 +37,13 @@ export class ChatService implements IChatService {
     {
       throw new Error("Name is already in use");
     }
+    /*
     chatClient = {id: id, name: name}
     this.userMap.push(chatClient)
+     */
+    let client = this.clientRepository.create();
+    client.name = name;
+    this.clientRepository.save(client);
     return chatClient;
   }
 
