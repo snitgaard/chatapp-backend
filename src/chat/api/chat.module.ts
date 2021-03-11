@@ -4,9 +4,10 @@ import { ChatService } from '../core/services/chat.service';
 import { IChatServiceProvider } from '../core/primary-ports/chat.service.interface';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Client } from '../../client.entity';
+import { Message } from '../../message.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Client])],
+  imports: [TypeOrmModule.forFeature([Client, Message])],
   providers:
     [
       ChatGateway,

@@ -1,10 +1,14 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryColumn } from 'typeorm';
+import { Message } from './message.entity';
 
 @Entity()
 export class Client {
-  @PrimaryGeneratedColumn()
-  public id: number;
+  @PrimaryColumn({unique: true})
+  public id: string;
 
-  @Column()
+  @Column({unique: true})
   public name: string;
+
+  @OneToMany(() => Message, (message: Message) => message.client)
+  public messages: Message[];
 }

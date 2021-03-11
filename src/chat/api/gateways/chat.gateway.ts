@@ -7,7 +7,6 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
-import { ChatService } from '../../core/services/chat.service';
 import { WelcomeDto } from '../dto/welcome.dto';
 import { IChatService, IChatServiceProvider } from '../../core/primary-ports/chat.service.interface';
 import { Inject } from '@nestjs/common';
@@ -19,56 +18,58 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server;
 
   @SubscribeMessage('message')
-  handleChatEvent(
+  async handleChatEvent(
     @MessageBody() message: string,
     @ConnectedSocket() client: Socket,
-    ): void {
-    const chatMessage = this.chatService.newMessage(message, client.id);
+    ): Promise<void> {
+    const chatMessage = await this.chatService.newMessage(message, client.id);
     this.server.emit('newMessage', chatMessage);
   }
 
   @SubscribeMessage('typing')
-  handleTypingEvent(
+  async handleTypingEvent(
     @MessageBody() typing: boolean,
     @ConnectedSocket() client: Socket,
-  ): void {
+  ): Promise<void> {
     console.log('typing', typing);
-    const chatClient = this.chatService.updateTyping(typing, client.id);
+    const chatClient = await this.chatService.updateTyping(typing, client.id);
     if(chatClient) {
       this.server.emit('clientTyping', chatClient);
     }
   }
 
   @SubscribeMessage('name')
-  handleNameEvent(
+  async handleNameEvent(
     @MessageBody() name: string,
     @ConnectedSocket() client: Socket,
-  ): void {
+  ): Promise<void> {
     try {
       //Emit that individual client
-      const chatClient = this.chatService.newClient(client.id, name);
+      const chatClient = await this.chatService.newClient(client.id, name);
+      const chatClients = await this.chatService.getClients();
       const welcome: WelcomeDto = {
-        clients: this.chatService.getClients(),
+        clients: chatClients,
         messages: this.chatService.getMessages(),
-        client: chatClient};
+        client: chatClient
+      };
 
       client.emit('welcome', welcome)
-      this.server.emit('clients', Array.from(this.chatService.getClients()));
+      this.server.emit('clients', chatClients);
     }
     catch (e) {
       client.error(e.message);
     }
   }
 
-  handleConnection(client: Socket, ...args: any[]): any {
+  async handleConnection(client: Socket, ...args: any[]): Promise<any> {
     console.log('Client connect:', client.id);
     client.emit("allMessages", this.chatService.getMessages());
-    this.server.emit('clients', this.chatService.getClients());
+    this.server.emit('clients', await this.chatService.getClients());
   }
 
-  handleDisconnect(client: Socket): any {
-    this.chatService.delete(client.id);
-    this.server.emit('clients', this.chatService.getClients());
+  async handleDisconnect(client: Socket): Promise<any> {
+    await this.chatService.delete(client.id);
+    this.server.emit('clients', await this.chatService.getClients());
     console.log('Client disconnect:', client.id);
   }
 }
