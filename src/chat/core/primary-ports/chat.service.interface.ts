@@ -9,7 +9,7 @@ export interface IChatService {
 
   getClients(): Promise<ChatClient[]>;
 
-  getMessages(): ChatMessage[];
+  getMessages(): Promise<ChatMessage[]>;
 
   delete(id: string): Promise<void>;
 

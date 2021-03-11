@@ -30,13 +30,6 @@ export class ChatService implements IChatService {
 
     return {message: message.message, chatClient: message.client, date: message.date };
 
-
-    /*const chatMessage: Message = {
-      message,
-      client: chatClients.find((c) => c.id === chatClientId),
-      date: Date.now(),
-    };*/
-
   }
 
   async newClient(id: string, name: string): Promise<ChatClient> {
@@ -63,8 +56,10 @@ export class ChatService implements IChatService {
     return chatClients;
   }
 
-  getMessages(): ChatMessage[]{
-    return this.allMessages;
+  async getMessages(): Promise<ChatMessage[]>{
+    const messages = await this.messageRepository.find();
+    const chatMessages: ChatMessage[] = JSON.parse(JSON.stringify(messages));
+    return chatMessages;
   }
 
   async delete(id: string): Promise<void> {
