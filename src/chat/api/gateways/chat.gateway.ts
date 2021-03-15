@@ -49,7 +49,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const chatClients = await this.chatService.getClients();
       const welcome: WelcomeDto = {
         clients: chatClients,
-        messages: this.chatService.getMessages(),
+        messages: await this.chatService.getMessages(),
         client: chatClient
       };
 
