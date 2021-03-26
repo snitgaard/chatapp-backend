@@ -7,7 +7,6 @@ import { Client } from '../../../client.entity';
 import { Repository } from 'typeorm';
 import { Message } from '../../../message.entity';
 
-
 @Injectable()
 export class ChatService implements IChatService {
   allMessages: ChatMessage[] = [];
@@ -18,6 +17,15 @@ export class ChatService implements IChatService {
     @InjectRepository(Message)
     private messageRepository: Repository<Message>,
   ) {}
+
+  async getClient(id: string): Promise<ChatClient> {
+        const clientDb = await  this.clientRepository.findOne({id: id})
+        const chatClient: ChatClient = {
+          id: clientDb.id,
+          name: clientDb.name
+        };
+        return chatClient;
+    }
 
   async newMessage(messageString: string, chatClientId: string): Promise<ChatMessage> {
     let message: Message = this.messageRepository.create();

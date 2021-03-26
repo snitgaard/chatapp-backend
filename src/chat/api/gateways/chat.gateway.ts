@@ -10,6 +10,7 @@ import { Socket } from 'socket.io';
 import { WelcomeDto } from '../dto/welcome.dto';
 import { IChatService, IChatServiceProvider } from '../../core/primary-ports/chat.service.interface';
 import { Inject } from '@nestjs/common';
+import {v4 as uuidv4} from 'uuid';
 
 @WebSocketGateway()
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -44,20 +45,43 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
   ): Promise<void> {
     try {
-      //Emit that individual client
-      const chatClient = await this.chatService.newClient(client.id, name);
+      const uid = uuidv4();
+      const chatClient = await this.chatService.newClient(uid, name);
       const chatClients = await this.chatService.getClients();
       const welcome: WelcomeDto = {
         clients: chatClients,
         messages: await this.chatService.getMessages(),
         client: chatClient
       };
-
       client.emit('welcome', welcome)
       this.server.emit('clients', chatClients);
     }
     catch (e) {
       client.error(e.message);
+    }
+  }
+
+  @SubscribeMessage('clientConnect')
+  async handleClientConnect(
+    @MessageBody() id: string,
+    @ConnectedSocket() client: Socket,
+  ): Promise<void> {
+    if(id) {
+      const clientFound = await this.chatService.getClient(id);
+      if(clientFound)
+      {
+        const chatClients = await this.chatService.getClients();
+        const welcome: WelcomeDto = {
+          clients: chatClients,
+          messages: await this.chatService.getMessages(),
+          client: clientFound
+        };
+        client.emit('welcome', welcome)
+        this.server.emit('clients', chatClients);
+      }
+      else {
+        client.emit('error', 'Client Not Found');
+      }
     }
   }
 
