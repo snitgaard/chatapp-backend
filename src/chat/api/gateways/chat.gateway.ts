@@ -10,7 +10,8 @@ import { Socket } from 'socket.io';
 import { WelcomeDto } from '../dto/welcome.dto';
 import { IChatService, IChatServiceProvider } from '../../core/primary-ports/chat.service.interface';
 import { Inject } from '@nestjs/common';
-import {v4 as uuidv4} from 'uuid';
+import { JoinChatDto } from '../dto/join-chat.dto';
+import { ChatClient } from '../../core/models/chat-client.model';
 
 @WebSocketGateway()
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -39,14 +40,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  @SubscribeMessage('name')
-  async handleNameEvent(
-    @MessageBody() name: string,
+  @SubscribeMessage('joinChat')
+  async handleJoinChatEvent(
+    @MessageBody() joinChatClientDto: JoinChatDto,
     @ConnectedSocket() client: Socket,
   ): Promise<void> {
     try {
-      const uid = uuidv4();
-      const chatClient = await this.chatService.newClient(uid, name);
+      let chatClient: ChatClient = JSON.parse(JSON.stringify(joinChatClientDto));
+      chatClient = await this.chatService.newClient(chatClient);
       const chatClients = await this.chatService.getClients();
       const welcome: WelcomeDto = {
         clients: chatClients,
@@ -61,7 +62,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  @SubscribeMessage('clientConnect')
+  /*@SubscribeMessage('clientConnect')
   async handleClientConnect(
     @MessageBody() id: string,
     @ConnectedSocket() client: Socket,
@@ -83,7 +84,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         client.emit('error', 'Client Not Found');
       }
     }
-  }
+  }*/
 
   async handleConnection(client: Socket, ...args: any[]): Promise<any> {
     console.log('Client connect:', client.id);

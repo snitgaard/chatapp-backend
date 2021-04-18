@@ -10,7 +10,7 @@ import { Message } from '../../../message.entity';
 @Injectable()
 export class ChatService implements IChatService {
   allMessages: ChatMessage[] = [];
-  userMap: ChatClient[] = [];
+  clients: ChatClient[] = [];
   constructor(
     @InjectRepository(Client)
     private clientRepository: Repository<Client>,
@@ -34,28 +34,30 @@ export class ChatService implements IChatService {
     message.client = await this.clientRepository.findOne({id: chatClientId})
     message.date = Date.now();
     console.log("message", message);
+    console.log("chatClientId", chatClientId);
     message = await this.messageRepository.save(message);
 
     return {message: message.message, chatClient: message.client, date: message.date };
 
   }
 
-  async newClient(id: string, name: string): Promise<ChatClient> {
-    const clientDb = await this.clientRepository.findOne({name: name})
-    if(!clientDb)
+  async newClient(chatClient: ChatClient): Promise<ChatClient> {
+    const chatClientFoundById = await this.clientRepository.findOne({id: chatClient.id});
+    if(chatClientFoundById)
     {
-      let client = this.clientRepository.create();
-      client.id = id;
-      client.name = name;
-      client = await this.clientRepository.save(client);
-      return {id: '' + client.id, name: client.name};
+      return JSON.parse(JSON.stringify(chatClientFoundById));
     }
-    if(clientDb.id === id)
+    const chatClientFoundByName = await this.clientRepository.findOne({id: chatClient.name});
+    if(chatClientFoundByName)
     {
-      return {id: clientDb.id, name: clientDb.name};
-    } else {
-      throw new Error('Name is already in use')
+      throw new Error("Name is already in use");
     }
+    let client = this.clientRepository.create();
+    client.name = chatClient.name;
+    client = await this.clientRepository.save(client);
+    const newChatClient = JSON.parse(JSON.stringify(client));
+    this.clients.push(newChatClient);
+    return newChatClient;
   }
 
   async getClients(): Promise<ChatClient[]> {
@@ -72,7 +74,7 @@ export class ChatService implements IChatService {
 
   async delete(id: string): Promise<void> {
     await this.clientRepository.delete({id: id});
-    this.userMap = this.userMap.filter((c) => c.id !== id);
+    this.clients = this.clients.filter((c) => c.id !== id);
   }
 
   async updateTyping(typing: boolean, id: string): Promise<ChatClient> {
